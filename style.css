@@ -3,6 +3,7 @@
     --bluebox: linear-gradient(to bottom right, #e0f, #00f);
     --redbox: linear-gradient(to bottom right, #f90, #f00);
     --avlbox: linear-gradient(to bottom right, #ddd, #999);
+    --outbox: linear-gradient(to bottom right, #222, #000);
 }
 
 html, body{
