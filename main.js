@@ -36,6 +36,8 @@ const starterpossiblemoves = [[
     [true,true,true,true,true,true,true,true]
 ]];
 let possiblemoves = starterpossiblemoves;
+const cutablestarter = [[], []];
+let cutable = cutablestarter;
 
 for(var b of bxels){
     b.onclick = ev => {
@@ -63,18 +65,41 @@ function boxclick(x, y, el){
         }
     } else {
         pli = pli==0?1:0;
-        console.log(pli, x, y, possiblemoves[pli][x]);
+
+        let cutablepliinc = false;
+        for (var b of cutable[pli]){
+            if(b[0]==x&&b[1]==y) {
+                cutablepliinc=true;
+                break;
+            }
+        }
+
         if(possiblemoves[pli][x][y]) {
             currentbox[pli] = [x,y];
             triangle(el,x,y);
             colorturn(el);
+        } else if(cutablepliinc) {
+            cutbox(x,y);
         } else {
             pli = pli==0?1:0;
         }
     }
+    recoloroccupies();
+    detectcutables();
     detectpossiblemoves();
 }
 
+function brightto1(x, y){
+    document.getElementById(`${x}${y}`).style.filter = "brightness(1)";
+}
+function colorblue(x, y){
+    brightto1(x,y);
+    document.getElementById(`${x}${y}`).style.background = "var(--bluebox)";
+}
+function colorred(x, y){
+    brightto1(x,y);
+    document.getElementById(`${x}${y}`).style.background = "var(--redbox)";
+}
 function colorturn(el){
     el.style.background = pli==0?"var(--bluebox)":"var(--redbox)";
 }
@@ -83,6 +108,12 @@ function colorpb(x, y){
 }
 function colordef(x, y){
     document.getElementById(`${x}${y}`).style.background = "var(--defbox)";
+}
+function colorcut(x, y){
+    document.getElementById(`${x}${y}`).style.filter = "brightness(.5)";
+}
+function colorout(x, y){
+    document.getElementById(`${x}${y}`).style.background = "var(--outbox)";
 }
 
 
@@ -101,7 +132,136 @@ function circle(el, x, y){
     el.children[0].src = "cc.png";
     currentpiece[pli] = "c";
 }
+function cross(el, x, y){
+    boxes[x][y] = `x${pli}`;
+    el.children[0].src = "cs.png";
+    currentpiece[pli] = "x";
+}
+function out(x, y){
+    boxes[x][y] = `o${pli==0?1:0}`;
+}
 
+
+function cutbox(x,y){
+    let plx = currentbox[pli][0], ply = currentbox[pli][1];
+    let rx=x, ry=y;
+    if(x<plx) rx--;
+    else if(x>plx) rx++;
+    if(y<ply) ry--;
+    else if(y>ply) ry++;
+    let el = document.getElementById(`${rx}${ry}`);
+    currentbox[pli] = [rx, ry];
+    cross(el,rx,ry);
+    colorturn(el);
+    out(x,y);
+    colorout(x,y);
+}
+
+
+function recoloroccupies(){
+    for (var px in boxes){
+        for(var py in boxes[px]){
+            if(boxes[px][py][0]!="o"){
+                if (boxes[px][py][1]=="0"){
+                    colorblue(px, py);
+                } else if (boxes[px][py][1]=="1"){
+                    colorred(px, py);
+                }
+            } else {
+                brightto1(px, py);
+            }
+        }
+    }
+}
+
+
+function detectcutables(){
+    let npli = pli==0?1:0;
+    cutable[npli] = [];
+    let nplx = currentbox[npli][0], nply = currentbox[npli][1];
+    let nplpc = currentpiece[npli];
+    switch(nplpc){
+        case "s":
+            for(var tx=0; tx<8; tx++){
+                if(boxes[tx][nply].length>1){
+                    if(Number(boxes[tx][nply][1])!=npli){
+                        if((tx<nplx && boxes[tx-1][nply] == "0")||
+                            (tx>nplx && boxes[tx+1][nply] == "0")){
+                                cutable[npli].push([tx, nply]);
+                        }
+                    }
+                }
+            }
+            for(var ty=0; ty<8; ty++){
+                if(boxes[nplx][ty].length>1){
+                    if(Number(boxes[nplx][ty][1])!=npli){
+                        if((ty<nply && boxes[nplx][ty-1] == "0")||
+                            (ty>nply && boxes[nplx][ty+1] == "0")){
+                                cutable[npli].push([nplx, ty]);
+                        }
+                    }
+                }
+            }
+            break;
+        case "t":
+            var tx = nplx-1, ty = nply-1;
+            while (!(tx<0||ty<0||tx>7||ty>7)){
+                if(boxes[tx][ty].length>1){
+                    if(Number(boxes[tx][ty][1])!=npli){
+                        if(tx>0&&ty>0){
+                            if(boxes[tx-1][ty-1] == "0"){
+                                cutable[npli].push([tx, ty]);
+                            }
+                        }
+                    }
+                }
+                tx = tx-1, ty = ty-1;
+            }
+            var tx = nplx-1, ty = nply+1;
+            while (!(tx<0||ty<0||tx>7||ty>7)){
+                if(boxes[tx][ty].length>1){
+                    if(Number(boxes[tx][ty][1])!=npli){
+                        if(tx>0&&ty<7){
+                            if(boxes[tx-1][ty+1] == "0"){
+                                cutable[npli].push([tx, ty]);
+                            }
+                        }
+                    }
+                }
+                tx = tx-1, ty = ty+1;
+            }
+            var tx = nplx+1, ty = nply-1;
+            while (!(tx<0||ty<0||tx>7||ty>7)){
+                if(boxes[tx][ty].length>1){
+                    if(Number(boxes[tx][ty][1])!=npli){
+                        if(tx<7&&ty>0){
+                            if(boxes[tx+1][ty-1] == "0"){
+                                cutable[npli].push([tx, ty]);
+                            }
+                        }
+                    }
+                }
+                tx = tx+1, ty = ty-1;
+            }
+            var tx = nplx+1, ty = nply+1;
+            while (!(tx<0||ty<0||tx>7||ty>7)){
+                if(boxes[tx][ty].length>1){
+                    if(Number(boxes[tx][ty][1])!=npli){
+                        if(tx<7&&ty<7){
+                            if(boxes[tx+1][ty+1] == "0"){
+                                cutable[npli].push([tx, ty]);
+                            }
+                        }
+                    }
+                }
+                tx = tx+1, ty = ty+1;
+            }
+            break;
+    }
+    for(var b of cutable[npli]){
+        colorcut(b[0], b[1]);
+    }
+}
 
 function detectpossiblemoves(){
     let npli = pli==0?1:0;
@@ -139,6 +299,7 @@ function detectpossiblemoves(){
                 }
                 break;
             case "c":
+            case "x":
                 if(cnpx-1>-1)possiblemoves[npli][cnpx-1][cnpy] = true;
                 if(cnpx+1<8)possiblemoves[npli][cnpx+1][cnpy] = true;
                 if(cnpy-1>-1)possiblemoves[npli][cnpx][cnpy-1] = true;
@@ -226,7 +387,7 @@ function detectpossiblemoves(){
             }
         }
     }
-
+    
     for(var px in possiblemoves[npli]){
         for(var py in possiblemoves[npli][px]){
             if(possiblemoves[npli][px][py]) colorpb(px, py);
